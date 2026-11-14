@@ -1,0 +1,1507 @@
+[
+  {
+    "id": "74c712c76dc0a70a",
+    "type": "tab",
+    "label": "Enhanced Lambda Flow",
+    "disabled": false,
+    "info": "",
+    "env": []
+  },
+  {
+    "id": "e012232a2bee28f0",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Trigger Weather Fetch (Hourly)",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "3600",
+    "crontab": "",
+    "once": true,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 210,
+    "y": 500,
+    "wires": [
+      [
+        "47718933740bc888"
+      ]
+    ]
+  },
+  {
+    "id": "47718933740bc888",
+    "type": "http request",
+    "z": "74c712c76dc0a70a",
+    "name": "Get Thessaloniki Weather",
+    "method": "GET",
+    "ret": "obj",
+    "url": "https://api.openweathermap.org/data/2.5/forecast?lat=40.6403&lon=22.9444&q=Thessaloniki,GR&appid=${OPENWEATHERMAP_API_KEY}&units=metric",
+    "x": 1130,
+    "y": 500,
+    "wires": [
+      [
+        "d5f1e3d933069c8e"
+      ]
+    ]
+  },
+  {
+    "id": "464cf73ba09ecd25",
+    "type": "ui_chart",
+    "z": "74c712c76dc0a70a",
+    "name": "Air Quality History",
+    "group": "4588ea836735125a",
+    "order": 1,
+    "width": "0",
+    "height": "0",
+    "label": "Air Quality (7 days)",
+    "chartType": "line",
+    "legend": "true",
+    "xformat": "HH:mm DD/MM",
+    "interpolate": "linear",
+    "nodata": "No data",
+    "dot": true,
+    "ymin": "0",
+    "ymax": "",
+    "removeOlder": "7",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "86400",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#ff7f0e",
+      "#2ca02c",
+      "#ff0000",
+      "#00ff00",
+      "#0000ff",
+      "#000000",
+      "#000000",
+      "#000000",
+      "#000000"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 2050,
+    "y": 740,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "a1bd3b0408273329",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Load Historical on Start",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "2",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 190,
+    "y": 880,
+    "wires": [
+      [
+        "f86dbbbe470acfc7",
+        "9ac022578a7cf813"
+      ]
+    ]
+  },
+  {
+    "id": "f86dbbbe470acfc7",
+    "type": "file in",
+    "z": "74c712c76dc0a70a",
+    "name": "Read Historical Wind",
+    "filename": "${THESS_WIND_CSV_PATH}",
+    "filenameType": "str",
+    "format": "utf8",
+    "chunk": false,
+    "sendError": false,
+    "encoding": "none",
+    "allProps": false,
+    "x": 1030,
+    "y": 860,
+    "wires": [
+      [
+        "63cd51afd845eccc"
+      ]
+    ]
+  },
+  {
+    "id": "cea990f48c5ead31",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Process Wind History",
+    "func": "var windData = [];\nvar weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);\n\nif (Array.isArray(msg.payload)) {\n    msg.payload.forEach(row => {\n        var timestamp = parseInt(row.timestamp);\n        var wind = parseFloat(row.avrg_wind_spd);\n        if (timestamp > weekAgo && !isNaN(wind)) {\n            windData.push({\n                x: timestamp,\n                y: wind\n            });\n        }\n    });\n}\n\nflow.set('wind_history', windData);\n\nvar lastWind = null;\nif (windData.length > 0) {\n    lastWind = windData[windData.length - 1].y;  \n    msg.payload = [{\n        series: ['Wind Speed'],\n        data: [windData],\n        labels: ['Wind Speed (m/s)']\n    }];\n    return [msg, { payload: lastWind }];  \n}\nreturn [null, null];",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1500,
+    "y": 860,
+    "wires": [
+      [
+        "6088b30ae9daec34"
+      ],
+      [
+        "76dec9510f20f48b",
+        "4b7d8c8389c826b2"
+      ]
+    ]
+  },
+  {
+    "id": "9ac022578a7cf813",
+    "type": "file in",
+    "z": "74c712c76dc0a70a",
+    "name": "Read Historical Boxes",
+    "filename": "${THESS_BOXES_CSV_PATH}",
+    "filenameType": "str",
+    "format": "utf8",
+    "chunk": false,
+    "sendError": false,
+    "encoding": "none",
+    "allProps": false,
+    "x": 1030,
+    "y": 920,
+    "wires": [
+      [
+        "108dc9374aa10411"
+      ]
+    ]
+  },
+  {
+    "id": "9c2d97ad511b4e93",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Process Boxes History",
+    "func": "var pmData = {};\nvar weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);\n\nif (Array.isArray(msg.payload)) {\n    msg.payload.forEach(row => {\n        var timestamp = parseInt(row.timestamp);\n        var pm25 = parseFloat(row.pm25);\n        var pm10 = parseFloat(row.pm10);\n        \n        if (timestamp > weekAgo && !isNaN(pm25) && !isNaN(pm10)) {\n            if (!pmData[timestamp]) {\n                pmData[timestamp] = {pm25: [], pm10: []};\n            }\n            pmData[timestamp].pm25.push(pm25);\n            pmData[timestamp].pm10.push(pm10);\n        }\n    });\n}\n\n// Calculate averages for each timestamp\nvar pm25Data = [];\nvar pm10Data = [];\n\nObject.keys(pmData).sort().forEach(ts => {\n    var timestamp = parseInt(ts);\n    var avgPM25 = pmData[ts].pm25.reduce((a, b) => a + b, 0) / pmData[ts].pm25.length;\n    var avgPM10 = pmData[ts].pm10.reduce((a, b) => a + b, 0) / pmData[ts].pm10.length;\n    \n    pm25Data.push({x: timestamp, y: avgPM25});\n    pm10Data.push({x: timestamp, y: avgPM10});\n});\n\nvar history = pm25Data.map((item, index) => ({\n    timestamp: item.x,\n    pm25: item.y,\n    pm10: pm10Data[index].y\n}));\n\nflow.set('pm_history', history);\n\nif (pm25Data.length > 0) {\n    msg.payload = [{\n        series: ['PM2.5', 'PM10'],\n        data: [pm25Data, pm10Data],\n        labels: ['PM2.5', 'PM10']\n    }];\n    return msg;\n}\nreturn null;",
+    "outputs": 1,
+    "x": 1500,
+    "y": 920,
+    "wires": [
+      [
+        "464cf73ba09ecd25"
+      ]
+    ]
+  },
+  {
+    "id": "e01888a5ffaf1755",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Fetch Boxes Data (Every 15min)",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "900",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "",
+    "topic": "",
+    "payload": "[\"683f922b16e8290007e4c5b6\", \"67b1f76a07a8dc000787762c\", \"67a4a0ce4ef45d00085c1f9a\", \"678fc8ea06a21b00088ff150\", \"68a3a571b15a1e000843a5cd\", \"67a3e0414ef45d00080fec45\", \"6789048711da9c000756bac7\", \"67be36810031890007a16b50\", \"67a23bd9982b6b0007fdff9b\", \"67e1d3b67ac85e00083cb80a\", \"67ec4be11a4d9d0007c773eb\", \"67e1c3737ac85e00081f4bb4\", \"67c6156a25dcef000805ddcd\", \"680d792b0f126f0007bd56af\", \"680d6acf0f126f0007a4dab1\", \"67b1ff5f07a8dc0007958f19\", \"67e1b8167ac85e00080ae995\", \"68a24f0f04fef70007f3bfe9\", \"67c60ef825dcef0008faec23\", \"68a39776b15a1e00082bcb69\", \"67a0e8d675e50a000953a366\", \"67a6801e4ef45d00089d1d88\", \"67b1ed0307a8dc000775189f\", \"67e1cbc97ac85e00082e3c3f\"]",
+    "payloadType": "json",
+    "x": 220,
+    "y": 620,
+    "wires": [
+      [
+        "5db0f66e36ed8aab"
+      ]
+    ]
+  },
+  {
+    "id": "5db0f66e36ed8aab",
+    "type": "split",
+    "z": "74c712c76dc0a70a",
+    "name": "Split Box IDs",
+    "splt": "",
+    "spltType": "str",
+    "arraySplt": "1",
+    "arraySpltType": "len",
+    "stream": false,
+    "addname": "",
+    "property": "payload",
+    "x": 470,
+    "y": 620,
+    "wires": [
+      [
+        "406cc305894ee793"
+      ]
+    ]
+  },
+  {
+    "id": "406cc305894ee793",
+    "type": "http request",
+    "z": "74c712c76dc0a70a",
+    "name": "Get Single Box Data",
+    "method": "GET",
+    "ret": "obj",
+    "url": "https://api.opensensemap.org/boxes/{{payload}}",
+    "x": 680,
+    "y": 620,
+    "wires": [
+      [
+        "43c78b22f23afc25"
+      ]
+    ]
+  },
+  {
+    "id": "7256501a795b6fd5",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "debug 12",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1480,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "afc6f642a38d0f48",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "debug 1",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1700,
+    "y": 660,
+    "wires": []
+  },
+  {
+    "id": "f3f536c0710fcd52",
+    "type": "file",
+    "z": "74c712c76dc0a70a",
+    "name": "Store Wind to CSV",
+    "filename": "${THESS_WIND_CSV_PATH}",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1310,
+    "y": 440,
+    "wires": [
+      [
+        "7256501a795b6fd5"
+      ]
+    ]
+  },
+  {
+    "id": "43c78b22f23afc25",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Process Box Data (Speed Layer)",
+    "func": "if (msg.payload && msg.payload.sensors) {\n    var pm25 = null, pm10 = null;\n    var lat = msg.payload.currentLocation.coordinates[1];\n    var lon = msg.payload.currentLocation.coordinates[0];\n    var boxName = msg.payload.name || msg.payload._id;\n    var boxId = msg.payload._id;\n    \n    msg.payload.sensors.forEach(s => {\n        if (s.title === 'PM2.5' && s.lastMeasurement) pm25 = parseFloat(s.lastMeasurement.value);\n        if (s.title === 'PM10' && s.lastMeasurement) pm10 = parseFloat(s.lastMeasurement.value);\n    });\n    \n    if (pm25 !== null && pm10 !== null) {\n        // Calculate air quality color and cluster classification\n        var color = 'green';\n        var quality = 'Good';\n        var cluster = -1;\n        \n        // Get clusters from global for real-time classification\n        var foundClusters = global.get(\"foundclusters\") || [];\n        if (foundClusters.length > 0) {\n            var diff;\n            var min = 10000000;\n            for (var k = 0; k < foundClusters.length; k++) {\n                diff = Math.abs(foundClusters[k].centroid[0] - pm25);\n                if (diff < min) {\n                    cluster = k;\n                    min = diff;\n                }\n            }\n        }\n        \n        // Enhanced quality determination with cluster info\n        if (pm25 >= 30) {\n            color = 'red';\n            quality = 'Poor';\n        } else if (pm25 >= 20) {\n            color = 'orange';\n            quality = 'Moderate';\n        } else if (pm25 >= 10) {\n            color = 'yellow';\n            quality = 'Fair';\n        }\n        \n        // Create object for dashboard\n        var dashboardData = {\n            payload: {\n                box_id: boxId,\n                name: boxName,\n                pm25: pm25,\n                pm10: pm10,\n                lat: lat,\n                lon: lon,\n                color: color,\n                quality: quality,\n                cluster: cluster,\n                timestamp: Date.now()\n            }\n        };\n        \n        // Create separate message for CSV - clean string without brackets\n        var csvMsg = {\n            payload: Date.now() + ',' + boxId + ',' + pm25 + ',' + pm10 + ',' + lat + ',' + lon + ',' + cluster\n        };\n        \n        // Create cluster message for real-time analysis\n        var clusterMsg = {\n            payload: {\n                pm25: pm25,\n                pm10: pm10,\n                cluster: cluster,\n                boxId: boxId,\n                timestamp: Date.now()\n            }\n        };\n        \n        // Send dashboard data to first output, CSV string to second, cluster data to third\n        return [dashboardData, csvMsg, clusterMsg];\n    }\n}\nreturn [null, null, null];",
+    "outputs": 3,
+    "x": 980,
+    "y": 620,
+    "wires": [
+      [
+        "3bbbb3fcd995d578"
+      ],
+      [
+        "ea92ece6bdbf4063"
+      ],
+      [
+        "1314c0c117f99f3d"
+      ]
+    ]
+  },
+  {
+    "id": "ea92ece6bdbf4063",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Check/Add Boxes Header",
+    "func": "// Check if we've already written the header\nvar headerWritten = flow.get('boxes_header_written') || false;\n\nif (!headerWritten) {\n    // Send header first with cluster column\n    var headerMsg = {\n        payload: 'timestamp,box_id,pm25,pm10,latitude,longitude,cluster'\n    };\n    node.send(headerMsg);\n    \n    // Mark header as written\n    flow.set('boxes_header_written', true);\n}\n\n// Then send the actual data\nreturn msg;",
+    "outputs": 1,
+    "x": 1290,
+    "y": 660,
+    "wires": [
+      [
+        "5edaa1f8227e7aa8"
+      ]
+    ]
+  },
+  {
+    "id": "5edaa1f8227e7aa8",
+    "type": "file",
+    "z": "74c712c76dc0a70a",
+    "name": "Store Boxes to CSV",
+    "filename": "${THESS_BOXES_CSV_PATH}",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1520,
+    "y": 660,
+    "wires": [
+      [
+        "afc6f642a38d0f48"
+      ]
+    ]
+  },
+  {
+    "id": "63cd51afd845eccc",
+    "type": "csv",
+    "z": "74c712c76dc0a70a",
+    "name": "Parse Wind CSV",
+    "sep": ",",
+    "hdrin": true,
+    "hdrout": "none",
+    "multi": "mult",
+    "ret": "\\n",
+    "temp": "",
+    "skip": "0",
+    "strings": true,
+    "include_empty_strings": false,
+    "include_null_values": false,
+    "x": 1260,
+    "y": 860,
+    "wires": [
+      [
+        "cea990f48c5ead31"
+      ]
+    ]
+  },
+  {
+    "id": "108dc9374aa10411",
+    "type": "csv",
+    "z": "74c712c76dc0a70a",
+    "name": "Parse Boxes CSV",
+    "sep": ",",
+    "hdrin": true,
+    "hdrout": "none",
+    "multi": "mult",
+    "ret": "\\n",
+    "temp": "",
+    "skip": "0",
+    "strings": true,
+    "include_empty_strings": false,
+    "include_null_values": false,
+    "x": 1260,
+    "y": 920,
+    "wires": [
+      [
+        "9c2d97ad511b4e93",
+        "dd941d1586f11a5a"
+      ]
+    ]
+  },
+  {
+    "id": "333da180a14aa26b",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Reset CSV Headers (Manual)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 200,
+    "y": 380,
+    "wires": [
+      [
+        "8a05b7b31241f1a3"
+      ]
+    ]
+  },
+  {
+    "id": "8a05b7b31241f1a3",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Reset Header Flags",
+    "func": "// Reset the header flags\nflow.set('wind_header_written', false);\nflow.set('boxes_header_written', false);\n\nmsg.payload = 'Header flags reset - next write will include headers';\nreturn msg;",
+    "outputs": 1,
+    "x": 440,
+    "y": 380,
+    "wires": [
+      [
+        "223c89756ae5bb17"
+      ]
+    ]
+  },
+  {
+    "id": "223c89756ae5bb17",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "Header Reset Status",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 660,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "7b0bcbe51a339a22",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Initialize on Startup",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "0.1",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 170,
+    "y": 300,
+    "wires": [
+      [
+        "06c24dd158074fc5"
+      ]
+    ]
+  },
+  {
+    "id": "06c24dd158074fc5",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Check Existing Files",
+    "func": "// Check if files exist and have content\n// If they do, set header flags to true\n// This prevents duplicate headers when restarting Node-RED\n\nvar fs = global.get('fs');\nif (!fs) {\n    // If fs module not available, assume files don't exist\n    flow.set('wind_header_written', false);\n    flow.set('boxes_header_written', false);\n    return msg;\n}\n\ntry {\n    // Check wind file\n    var windFile = (env.get(\"THESS_WIND_CSV_PATH\") || \"data/thess_wind.csv\");\n    if (fs.existsSync(windFile)) {\n        var windStats = fs.statSync(windFile);\n        if (windStats.size > 0) {\n            flow.set('wind_header_written', true);\n        } else {\n            flow.set('wind_header_written', false);\n        }\n    } else {\n        flow.set('wind_header_written', false);\n    }\n    \n    // Check boxes file\n    var boxesFile = (env.get(\"THESS_BOXES_CSV_PATH\") || \"data/thess_boxes.csv\");\n    if (fs.existsSync(boxesFile)) {\n        var boxesStats = fs.statSync(boxesFile);\n        if (boxesStats.size > 0) {\n            flow.set('boxes_header_written', true);\n        } else {\n            flow.set('boxes_header_written', false);\n        }\n    } else {\n        flow.set('boxes_header_written', false);\n    }\n    \n    msg.payload = 'File check complete';\n} catch(err) {\n    // If error, assume files don't exist\n    flow.set('wind_header_written', false);\n    flow.set('boxes_header_written', false);\n    msg.payload = 'File check error: ' + err.message;\n}\n\nreturn msg;",
+    "outputs": 1,
+    "x": 420,
+    "y": 300,
+    "wires": [
+      [
+        "267dd4b99e66240f"
+      ]
+    ]
+  },
+  {
+    "id": "267dd4b99e66240f",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "File Check Status",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 630,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "b5d1bb1efd723b21",
+    "type": "comment",
+    "z": "74c712c76dc0a70a",
+    "name": "BATCH LAYER - Historical Analysis",
+    "info": "Καθαρίζει τα CSVs και να ξεκινήσεις από την αρχή",
+    "x": 220,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "d5f1e3d933069c8e",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Extract Wind Data (Speed Layer)",
+    "func": "if (msg.payload && msg.payload.list && msg.payload.list.length > 0) {\n    var nearest = msg.payload.list[0];\n    var wind = nearest.wind.speed;\n    var timestamp = Date.now();\n    \n    flow.set('latest_wind', {speed: wind, timestamp: timestamp});\n    \n    var windHistory = flow.get('wind_history') || [];\n    windHistory.push({\n        x: timestamp,\n        y: wind\n    });\n    \n    // Keep only last 7 days\n    var weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);\n    windHistory = windHistory.filter(d => d.x > weekAgo);\n    flow.set('wind_history', windHistory);\n    \n    // OUTPUT 1: CSV data\n    var csvMsg = {\n        payload: timestamp + ',' + wind\n    };\n    \n    // OUTPUT 2: Chart data\n    var chartMsg = {\n        payload: [{\n            series: ['Wind Speed'],\n            data: [windHistory],\n            labels: ['Wind Speed (m/s)']\n        }]\n    };\n    \n    // OUTPUT 3: Current wind display\n    var displayMsg = {\n        payload: wind\n    };\n    \n    return [csvMsg, chartMsg, displayMsg];\n}\nreturn [null, null, null];",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1430,
+    "y": 500,
+    "wires": [
+      [
+        "1bfb9fba1439d7ed"
+      ],
+      [
+        "6088b30ae9daec34"
+      ],
+      [
+        "4b7d8c8389c826b2",
+        "c8438a1fc00a1582"
+      ]
+    ]
+  },
+  {
+    "id": "aa334db5d11ac7b7",
+    "type": "ui_template",
+    "z": "74c712c76dc0a70a",
+    "group": "f1eb5d5f179e6828",
+    "name": "Map in Dashboard",
+    "order": 1,
+    "width": 12,
+    "height": 10,
+    "format": "<iframe src=\"/worldmap\" style=\"width:100%; height:450px; border:none;\"></iframe>\n\n<style>\n    /* Make iframe responsive */\n    iframe {\n        border-radius: 8px;\n        box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n    }\n</style>",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "x": 2050,
+    "y": 700,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "726170279ac10ee8",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Process for Dashboard (Serving Layer)",
+    "func": "if (Array.isArray(msg.payload)) {\n    var validBoxes = msg.payload.filter(b => b !== null);\n    \n    // Calculate averages\n    var totalPM25 = 0, totalPM10 = 0;\n    var tableData = [];\n    var boxCount = 0;\n    var clusterCounts = {};\n    \n    validBoxes.forEach(box => {\n        if (box && box.pm25 !== null && box.pm10 !== null) {\n            totalPM25 += box.pm25;\n            totalPM10 += box.pm10;\n            boxCount++;\n            \n            // Count clusters\n            var clusterKey = box.cluster !== undefined ? box.cluster : 'unknown';\n            clusterCounts[clusterKey] = (clusterCounts[clusterKey] || 0) + 1;\n            \n            // Create table row with cluster info\n            tableData.push({\n                name: box.name,\n                pm25: box.pm25.toFixed(1),\n                pm10: box.pm10.toFixed(1),\n                quality: box.quality,\n                cluster: box.cluster !== undefined ? 'C' + box.cluster : 'N/A',\n                lat: box.lat.toFixed(4),\n                lon: box.lon.toFixed(4)\n            });\n        }\n    });\n    \n    var avgPM25 = boxCount > 0 ? totalPM25 / boxCount : 0;\n    var avgPM10 = boxCount > 0 ? totalPM10 / boxCount : 0;\n    \n    // Get historical data\n    var history = flow.get('pm_history') || [];\n    \n    // Add current data point\n    history.push({\n        timestamp: Date.now(),\n        pm25: avgPM25,\n        pm10: avgPM10\n    });\n    \n    // Keep only last 7 days and update flow\n    var weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);\n    history = history.filter(h => h.timestamp > weekAgo);\n    flow.set('pm_history', history);\n    \n    // Store current boxes for map\n    flow.set('current_boxes', validBoxes);\n    \n    // OUTPUT 1: Send to table\n    var tableMsg = {\n        payload: tableData\n    };\n    \n    // OUTPUT 2: Prepare chart data properly\n    var pm25Data = [];\n    var pm10Data = [];\n    \n    // Convert history to chart format\n    history.forEach(function(point) {\n        pm25Data.push({x: point.timestamp, y: point.pm25});\n        pm10Data.push({x: point.timestamp, y: point.pm10});\n    });\n    \n    // Create chart message with proper structure\n    var chartMsg = {\n        payload: [{\n            series: ['PM2.5', 'PM10'],\n            data: [pm25Data, pm10Data],\n            labels: ['PM2.5', 'PM10']\n        }]\n    };\n    \n    // OUTPUT 3: Send to text display with cluster info\n    var clusterInfo = '';\n    Object.keys(clusterCounts).forEach(function(cluster) {\n        clusterInfo += `Cluster ${cluster}: ${clusterCounts[cluster]} sensors\\n`;\n    });\n    \n    var textMsg = {\n        payload: \"Average PM2.5: \" + avgPM25.toFixed(1) + \" μg/m³\\n\" +\n                 \"Average PM10: \" + avgPM10.toFixed(1) + \" μg/m³\\n\" +\n                 \"Active Sensors: \" + boxCount + \"/24\\n\" +\n                 \"\\nCluster Distribution:\\n\" + clusterInfo\n    };\n    \n    // OUTPUT 4: Send valid boxes to map preparation\n    var mapDataMsg = {\n        payload: validBoxes\n    };\n    \n    // Return all outputs\n    return [tableMsg, chartMsg, textMsg, mapDataMsg];\n}\n\nreturn null;",
+    "outputs": 4,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1670,
+    "y": 600,
+    "wires": [
+      [
+        "87205b75f40df1a4"
+      ],
+      [],
+      [
+        "clean_status_formatter"
+      ],
+      [
+        "464cf73ba09ecd25",
+        "aa334db5d11ac7b7",
+        "trigger_cluster_update",
+        "individual_markers_unified_zones"
+      ]
+    ]
+  },
+  {
+    "id": "372c2cf67fdc9173",
+    "type": "worldmap",
+    "z": "74c712c76dc0a70a",
+    "name": "Thessaloniki Map",
+    "lat": "40.6403",
+    "lon": "22.9444",
+    "zoom": "12",
+    "layer": "OSM",
+    "cluster": "",
+    "maxage": "",
+    "usermenu": "show",
+    "layers": "show",
+    "panit": "false",
+    "panlock": "false",
+    "zoomlock": "false",
+    "hiderightclick": "false",
+    "coords": "deg",
+    "showgrid": "false",
+    "path": "/worldmap",
+    "x": 2830,
+    "y": 660,
+    "wires": []
+  },
+  {
+    "id": "1bfb9fba1439d7ed",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Check/Add Wind Header",
+    "func": "// Check if we've already written the header\nvar headerWritten = flow.get('wind_header_written') || false;\n\nif (!headerWritten) {\n    var headerMsg = {\n        payload: 'timestamp, avrg_wind_spd'\n    };\n    node.send(headerMsg);\n    \n    flow.set('wind_header_written', true);\n}\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1050,
+    "y": 440,
+    "wires": [
+      [
+        "f3f536c0710fcd52"
+      ]
+    ]
+  },
+  {
+    "id": "6088b30ae9daec34",
+    "type": "ui_chart",
+    "z": "74c712c76dc0a70a",
+    "name": "Wind History Chart",
+    "group": "4588ea836735125a",
+    "order": 1,
+    "width": "0",
+    "height": "0",
+    "label": "Wind History (7 days)",
+    "chartType": "line",
+    "legend": "true",
+    "xformat": "HH:mm DD/MM",
+    "interpolate": "linear",
+    "nodata": "No data",
+    "dot": true,
+    "ymin": "0",
+    "ymax": "",
+    "removeOlder": "7",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "86400",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#ff7f0e",
+      "#2ca02c",
+      "#ff0000",
+      "#00ff00",
+      "#0000ff",
+      "#000000",
+      "#000000",
+      "#000000",
+      "#000000"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 2050,
+    "y": 780,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "4b7d8c8389c826b2",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "3525da1ce0b91433",
+    "order": 3,
+    "width": "12",
+    "height": "4",
+    "name": "Wind Speed Display",
+    "label": "Current Wind Speed in m/s",
+    "format": "{{msg.payload}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 2060,
+    "y": 820,
+    "wires": []
+  },
+  {
+    "id": "76dec9510f20f48b",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "debug 2",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1780,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "c8438a1fc00a1582",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "debug 3",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1770,
+    "y": 480,
+    "wires": []
+  },
+  {
+    "id": "db93878d66186cea",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Check Alerts (15min)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "900",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 200,
+    "y": 1180,
+    "wires": [
+      [
+        "6c09962757491ab5"
+      ]
+    ]
+  },
+  {
+    "id": "6c09962757491ab5",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Enhanced Alert System with Clusters",
+    "func": "var history = flow.get('pm_history') || [];\nvar wind = flow.get('latest_wind') || {speed: 0};\nvar clusters = global.get('foundclusters') || [];\n\nif (history.length > 0) {\n    var latest = history[history.length - 1];\n    var pm25 = latest.pm25;\n    var pm10 = latest.pm10;\n    var windSpeed = wind.speed;\n    \n    // Alert thresholds\n    var pm25Limit = 25;\n    var pm10Limit = 50;\n    var windLimit = 3;\n    \n    var alertLevel = 'Good';\n    var alertColor = 'green';\n    var message = 'Air quality is good';\n    \n    // Enhanced alerts with cluster information\n    var clusterAlert = '';\n    if (clusters.length > 0) {\n        // Check if current PM2.5 falls in high-pollution cluster\n        var diff;\n        var minDiff = 10000000;\n        var currentCluster = -1;\n        \n        for (var k = 0; k < clusters.length; k++) {\n            diff = Math.abs(clusters[k].centroid[0] - pm25);\n            if (diff < minDiff) {\n                currentCluster = k;\n                minDiff = diff;\n            }\n        }\n        \n        if (currentCluster >= 0) {\n            clusterAlert = `Current pollution pattern matches Cluster ${currentCluster}\\n`;\n            \n            // If in the highest cluster (assuming clusters are sorted), add extra warning\n            if (currentCluster === clusters.length - 1) {\n                clusterAlert += 'WARNING: This matches the highest pollution cluster pattern!\\n';\n            }\n        }\n    }\n    \n    if ((pm25 > pm25Limit || pm10 > pm10Limit) && windSpeed < windLimit) {\n        alertLevel = 'Poor';\n        alertColor = 'red';\n        message = `⚠️ High Pollution Alert!\\n${clusterAlert}\\nPM2.5: ${pm25.toFixed(1)} μg/m³\\nPM10: ${pm10.toFixed(1)} μg/m³\\nWind: ${windSpeed.toFixed(1)} m/s\\nStay indoors!`;\n        \n        // Send email alert\n        var emailMsg = {\n            to: env.get(\"ALERT_EMAIL_TO\"),\n            topic: 'Thessaloniki Air Quality Alert',\n            payload: message\n        };\n        node.send([{payload: message, topic: 'alert'}, emailMsg]);\n    } else if (pm25 > 15 || pm10 > 30) {\n        alertLevel = 'Moderate';\n        alertColor = 'orange';\n        message = `Air quality is moderate\\n${clusterAlert}\\nPM2.5: ${pm25.toFixed(1)} μg/m³\\nPM10: ${pm10.toFixed(1)} μg/m³`;\n        node.send([{payload: message, topic: 'warning'}, null]);\n    } else {\n        message = `Air quality is good\\n${clusterAlert}\\nPM2.5: ${pm25.toFixed(1)} μg/m³\\nPM10: ${pm10.toFixed(1)} μg/m³`;\n        node.send([{payload: message, topic: 'ok'}, null]);\n    }\n}\nreturn null;",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 490,
+    "y": 1180,
+    "wires": [
+      [
+        "clean_alert_formatter"
+      ],
+      [
+        "9dee7d5c3d5a332f"
+      ]
+    ]
+  },
+  {
+    "id": "9dee7d5c3d5a332f",
+    "type": "e-mail",
+    "z": "74c712c76dc0a70a",
+    "server": "smtp.gmail.com",
+    "port": "587",
+    "secure": false,
+    "name": "recipient@example.com",
+    "dname": "Email Alert",
+    "x": 790,
+    "y": 1200,
+    "wires": []
+  },
+  {
+    "id": "18fb5de3e141374e",
+    "type": "ui_button",
+    "z": "74c712c76dc0a70a",
+    "name": "Trigger Test Alert",
+    "group": "3525da1ce0b91433",
+    "order": 4,
+    "width": "0",
+    "height": "0",
+    "passthru": false,
+    "label": "Trigger Alert (Test)",
+    "tooltip": "Inject fake data to test alerts",
+    "color": "",
+    "bgcolor": "#ff5722",
+    "className": "",
+    "icon": "fa-exclamation-triangle",
+    "payload": "",
+    "payloadType": "date",
+    "topic": "",
+    "topicType": "str",
+    "x": 180,
+    "y": 1280,
+    "wires": [
+      [
+        "4baa3ede07aa65a2"
+      ]
+    ]
+  },
+  {
+    "id": "4baa3ede07aa65a2",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Simulate Alert Data",
+    "func": "// Simulate fake box data\nvar fakeBoxes = [\n    {\n        name: \"TEST STATION 1\",\n        pm25: 35,\n        pm10: 60,\n        lat: 40.6403,\n        lon: 22.9444,\n        color: 'red',\n        quality: 'Poor',\n        timestamp: Date.now()\n    },\n    {\n        name: \"TEST STATION 2\", \n        pm25: 40,\n        pm10: 65,\n        lat: 40.6503,\n        lon: 22.9544,\n        color: 'red',\n        quality: 'Poor',\n        timestamp: Date.now()\n    }\n];\n\n// Simulate fake wind (low for alert)\nvar fakeWind = {\n    speed: 2 // Low to trigger alert when combined with high PM\n};\n\n// Set in flow for alert check\nflow.set('pm_history', [{\n    timestamp: Date.now(),\n    pm25: 35, // Average\n    pm10: 60\n}]);\nflow.set('latest_wind', fakeWind);\n\n// Send to alert function (simulate input like real data)\nmsg.payload = \"\"; // Empty to trigger alert check\nmsg.topic = \"test_alert\";\n\nflow.set('alert_flag', false);\n\nreturn [null, msg]; // Output 2 to alert trigger\n\n",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 420,
+    "y": 1280,
+    "wires": [
+      [],
+      [
+        "6c09962757491ab5"
+      ]
+    ]
+  },
+  {
+    "id": "20f1d587de819432",
+    "type": "comment",
+    "z": "74c712c76dc0a70a",
+    "name": "SPEED LAYER - Real-time Processing",
+    "info": "",
+    "x": 240,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "dd941d1586f11a5a",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Prepare Data for Batch Clustering",
+    "func": "// Extract PM2.5 values for clustering analysis\nvar pm25Values = [];\n\nif (Array.isArray(msg.payload)) {\n    msg.payload.forEach(row => {\n        var pm25 = parseFloat(row.pm25);\n        if (!isNaN(pm25)) {\n            pm25Values.push([pm25]); // K-means expects array of arrays\n        }\n    });\n}\n\n// Only proceed if we have enough data points\nif (pm25Values.length > 5) {\n    msg.payload = pm25Values;\n    return msg;\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 1540,
+    "y": 980,
+    "wires": [
+      [
+        "706198184f3ce81d"
+      ]
+    ]
+  },
+  {
+    "id": "706198184f3ce81d",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "K-means Cluster Analysis (Batch Layer)",
+    "func": "// Initialize clustering if not already done\nif (!global.get('clusters')) {\n    // Simple K-means implementation\n    global.set('clusters', {\n        k: function(numClusters) {\n            this._k = numClusters || 3;\n            return this;\n        },\n        iterations: function(iter) {\n            this._iterations = iter || 100;\n            return this;\n        },\n        data: function(dataset) {\n            this._data = dataset;\n            return this;\n        },\n        clusters: function() {\n            if (!this._data || this._data.length === 0) return [];\n            \n            var k = this._k || 3;\n            var iterations = this._iterations || 100;\n            var data = this._data;\n            \n            // Initialize centroids randomly\n            var centroids = [];\n            var min = Math.min(...data.map(d => d[0]));\n            var max = Math.max(...data.map(d => d[0]));\n            \n            for (var i = 0; i < k; i++) {\n                centroids.push([min + (max - min) * Math.random()]);\n            }\n            \n            // Run K-means iterations\n            for (var iter = 0; iter < iterations; iter++) {\n                var clusters = [];\n                for (var i = 0; i < k; i++) {\n                    clusters.push([]);\n                }\n                \n                // Assign points to nearest centroid\n                data.forEach(point => {\n                    var minDist = Infinity;\n                    var clusterIndex = 0;\n                    \n                    centroids.forEach((centroid, idx) => {\n                        var dist = Math.abs(point[0] - centroid[0]);\n                        if (dist < minDist) {\n                            minDist = dist;\n                            clusterIndex = idx;\n                        }\n                    });\n                    \n                    clusters[clusterIndex].push(point);\n                });\n                \n                // Update centroids\n                var newCentroids = [];\n                clusters.forEach(cluster => {\n                    if (cluster.length > 0) {\n                        var sum = cluster.reduce((acc, point) => acc + point[0], 0);\n                        newCentroids.push([sum / cluster.length]);\n                    } else {\n                        newCentroids.push([min + (max - min) * Math.random()]);\n                    }\n                });\n                \n                centroids = newCentroids;\n            }\n            \n            // Format result similar to school example\n            var result = [];\n            centroids.forEach((centroid, idx) => {\n                result.push({\n                    centroid: centroid,\n                    cluster: idx,\n                    size: clusters[idx] ? clusters[idx].length : 0\n                });\n            });\n            \n            // Sort by centroid value (low to high pollution)\n            result.sort((a, b) => a.centroid[0] - b.centroid[0]);\n            \n            return result;\n        }\n    });\n}\n\nvar clusterMaker = global.get('clusters');\n\n// Configure clustering\nclusterMaker.k(3); // 3 clusters: Good, Moderate, Poor\nclusterMaker.iterations(100);\nclusterMaker.data(msg.payload);\n\n// Perform clustering\nvar clusterResults = clusterMaker.clusters();\n\n// Store clusters globally for real-time classification\nglobal.set('foundclusters', clusterResults);\n\n// Prepare output message\nmsg.payload = clusterResults;\n\nreturn msg;",
+    "outputs": 1,
+    "x": 1880,
+    "y": 980,
+    "wires": [
+      [
+        "0e26606b2c29a1ca",
+        "enhanced_cluster_formatter"
+      ]
+    ]
+  },
+  {
+    "id": "0e26606b2c29a1ca",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "Cluster Results",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 2180,
+    "y": 1040,
+    "wires": []
+  },
+  {
+    "id": "1314c0c117f99f3d",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Real-time Cluster Classification",
+    "func": "// Get stored clusters from batch processing\nvar foundClusters = global.get('foundclusters') || [];\n\nif (foundClusters.length > 0 && msg.payload) {\n    var pm25 = msg.payload.pm25;\n    var boxId = msg.payload.boxId;\n    \n    // Find closest cluster\n    var minDiff = Infinity;\n    var assignedCluster = -1;\n    \n    foundClusters.forEach((cluster, idx) => {\n        var diff = Math.abs(cluster.centroid[0] - pm25);\n        if (diff < minDiff) {\n            minDiff = diff;\n            assignedCluster = idx;\n        }\n    });\n    \n    // Determine cluster quality label\n    var clusterQuality = 'Unknown';\n    if (assignedCluster === 0) {\n        clusterQuality = 'Low Pollution Cluster';\n    } else if (assignedCluster === 1) {\n        clusterQuality = 'Moderate Pollution Cluster';\n    } else if (assignedCluster === 2) {\n        clusterQuality = 'High Pollution Cluster';\n    }\n    \n    // Create enhanced message with cluster info\n    msg.payload = {\n        boxId: boxId,\n        pm25: pm25,\n        cluster: assignedCluster,\n        clusterQuality: clusterQuality,\n        centroid: foundClusters[assignedCluster] ? foundClusters[assignedCluster].centroid[0] : null,\n        timestamp: Date.now()\n    };\n    \n    return msg;\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 1310,
+    "y": 720,
+    "wires": [
+      [
+        "795da4581f99ec95",
+        "6f2b7965a158515f"
+      ]
+    ]
+  },
+  {
+    "id": "795da4581f99ec95",
+    "type": "debug",
+    "z": "74c712c76dc0a70a",
+    "name": "Real-time Classification",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1590,
+    "y": 720,
+    "wires": []
+  },
+  {
+    "id": "0e0d89ae59a3f26f",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Run Clustering Analysis (Manual)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 230,
+    "y": 980,
+    "wires": [
+      [
+        "b153dbf0f39f007a"
+      ]
+    ]
+  },
+  {
+    "id": "b153dbf0f39f007a",
+    "type": "file in",
+    "z": "74c712c76dc0a70a",
+    "name": "Read Historical for Clustering",
+    "filename": "${THESS_BOXES_CSV_PATH}",
+    "filenameType": "str",
+    "format": "utf8",
+    "chunk": false,
+    "sendError": false,
+    "encoding": "none",
+    "allProps": false,
+    "x": 540,
+    "y": 980,
+    "wires": [
+      [
+        "b11c35804d0124ee"
+      ]
+    ]
+  },
+  {
+    "id": "b11c35804d0124ee",
+    "type": "csv",
+    "z": "74c712c76dc0a70a",
+    "name": "Parse for Clustering",
+    "sep": ",",
+    "hdrin": true,
+    "hdrout": "none",
+    "multi": "mult",
+    "ret": "\\n",
+    "temp": "",
+    "skip": "0",
+    "strings": true,
+    "include_empty_strings": false,
+    "include_null_values": false,
+    "x": 780,
+    "y": 980,
+    "wires": [
+      [
+        "dd941d1586f11a5a"
+      ]
+    ]
+  },
+  {
+    "id": "5986a656b1a0538e",
+    "type": "inject",
+    "z": "74c712c76dc0a70a",
+    "name": "Auto Clustering (Daily)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "0 2 * * *",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 210,
+    "y": 1080,
+    "wires": [
+      [
+        "b153dbf0f39f007a"
+      ]
+    ]
+  },
+  {
+    "id": "3bbbb3fcd995d578",
+    "type": "join",
+    "z": "74c712c76dc0a70a",
+    "name": "Join Box Data",
+    "mode": "custom",
+    "build": "array",
+    "property": "payload",
+    "key": "topic",
+    "joiner": "\\n",
+    "accumulate": false,
+    "timeout": "",
+    "count": "24",
+    "x": 1330,
+    "y": 600,
+    "wires": [
+      [
+        "726170279ac10ee8"
+      ]
+    ]
+  },
+  {
+    "id": "6f2b7965a158515f",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Detect Cluster Migrations",
+    "func": "// Detect when sensors change clusters\nif (msg.payload && msg.payload.boxId) {\n    var currentData = msg.payload;\n    var boxId = currentData.boxId;\n    var currentCluster = currentData.cluster;\n    \n    // Get previous cluster states\n    var previousStates = flow.get('sensor_cluster_states') || {};\n    var migrations = flow.get('cluster_migrations') || [];\n    \n    // Check if this sensor changed cluster\n    if (previousStates[boxId] !== undefined && previousStates[boxId] !== currentCluster) {\n        var migration = {\n            timestamp: Date.now(),\n            boxId: boxId,\n            fromCluster: previousStates[boxId],\n            toCluster: currentCluster,\n            pm25: currentData.pm25\n        };\n        \n        migrations.push(migration);\n        \n        // Keep only last 100 migrations\n        if (migrations.length > 100) {\n            migrations = migrations.slice(-100);\n        }\n        flow.set('cluster_migrations', migrations);\n        \n        // Create alert message\n        var alertLevel = 'info';\n        var alertMessage = `Sensor ${boxId} moved from Cluster ${migration.fromCluster} to Cluster ${migration.toCluster}`;\n        \n        // Determine severity\n        if (migration.toCluster > migration.fromCluster) {\n            alertLevel = 'warning';\n            alertMessage += ` (Quality degraded - PM2.5: ${currentData.pm25.toFixed(1)} μg/m³)`;\n        } else {\n            alertLevel = 'info';\n            alertMessage += ` (Quality improved - PM2.5: ${currentData.pm25.toFixed(1)} μg/m³)`;\n        }\n        \n        // Send migration alert\n        var alertMsg = {\n            payload: {\n                level: alertLevel,\n                message: alertMessage,\n                migration: migration\n            }\n        };\n        \n        node.send([alertMsg, null]);\n    }\n    \n    // Update current state\n    previousStates[boxId] = currentCluster;\n    flow.set('sensor_cluster_states', previousStates);\n    \n    // Send current migration summary\n    var recentMigrations = migrations.filter(m => m.timestamp > (Date.now() - 60 * 60 * 1000)); // Last hour\n    var summaryMsg = {\n        payload: `Recent Migrations (1h): ${recentMigrations.length}\\n` +\n                `Total Tracked: ${Object.keys(previousStates).length} sensors\\n` +\n                `Last Migration: ${migrations.length > 0 ? new Date(migrations[migrations.length - 1].timestamp).toLocaleTimeString() : 'None'}`\n    };\n    \n    return [null, summaryMsg];\n}\n\nreturn [null, null];",
+    "outputs": 2,
+    "x": 1310,
+    "y": 780,
+    "wires": [
+      [
+        "74b9d5795f25af95"
+      ],
+      [
+        "b096ea4d90c4c139"
+      ]
+    ]
+  },
+  {
+    "id": "74b9d5795f25af95",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "9f4e8365551cdeb4",
+    "order": 3,
+    "width": "12",
+    "height": "3",
+    "name": "Migration Alerts",
+    "label": "Latest Migration Alert",
+    "format": "{{msg.payload.message}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 1570,
+    "y": 760,
+    "wires": []
+  },
+  {
+    "id": "b096ea4d90c4c139",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "9f4e8365551cdeb4",
+    "order": 4,
+    "width": "12",
+    "height": "3",
+    "name": "Migration Summary",
+    "label": "Migration Summary",
+    "format": "{{msg.payload}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "",
+    "color": "#000000",
+    "x": 1570,
+    "y": 800,
+    "wires": []
+  },
+  {
+    "id": "simple_cluster_display",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "9f4e8365551cdeb4",
+    "order": 1,
+    "width": "12",
+    "height": "4",
+    "name": "Cluster Info",
+    "label": "Air Quality Clusters",
+    "format": "{{msg.payload}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "12",
+    "color": "#000000",
+    "x": 2490,
+    "y": 980,
+    "wires": []
+  },
+  {
+    "id": "87205b75f40df1a4",
+    "type": "ui_table",
+    "z": "74c712c76dc0a70a",
+    "group": "f1eb5d5f179e6828",
+    "name": "Sensors Table",
+    "order": 2,
+    "width": 12,
+    "height": 5,
+    "columns": [
+      {
+        "field": "name",
+        "title": "Station",
+        "width": "25%",
+        "align": "left",
+        "formatter": "plaintext",
+        "formatterParams": {
+          "target": "_blank"
+        }
+      },
+      {
+        "field": "pm25",
+        "title": "PM2.5",
+        "width": "12%",
+        "align": "center",
+        "formatter": "plaintext"
+      },
+      {
+        "field": "pm10",
+        "title": "PM10",
+        "width": "12%",
+        "align": "center",
+        "formatter": "plaintext"
+      },
+      {
+        "field": "quality",
+        "title": "Quality",
+        "width": "15%",
+        "align": "center",
+        "formatter": "plaintext"
+      },
+      {
+        "field": "cluster",
+        "title": "Cluster",
+        "width": "10%",
+        "align": "center",
+        "formatter": "plaintext"
+      },
+      {
+        "field": "lat",
+        "title": "Latitude",
+        "width": "13%",
+        "align": "center",
+        "formatter": "plaintext"
+      },
+      {
+        "field": "lon",
+        "title": "Longitude",
+        "width": "13%",
+        "align": "center",
+        "formatter": "plaintext"
+      }
+    ],
+    "outputs": 0,
+    "cts": false,
+    "x": 2040,
+    "y": 580,
+    "wires": []
+  },
+  {
+    "id": "simple_status_display",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "3525da1ce0b91433",
+    "order": 1,
+    "width": "6",
+    "height": "5",
+    "name": "Status Display",
+    "label": "",
+    "format": "{{msg.payload}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "14",
+    "color": "#000000",
+    "x": 2250,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "simple_alert_display",
+    "type": "ui_text",
+    "z": "74c712c76dc0a70a",
+    "group": "3525da1ce0b91433",
+    "order": 2,
+    "width": "6",
+    "height": "4",
+    "name": "Alert Display",
+    "label": "",
+    "format": "{{msg.payload}}",
+    "layout": "col-center",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": "14",
+    "color": "#000000",
+    "x": 1040,
+    "y": 1140,
+    "wires": []
+  },
+  {
+    "id": "clean_status_formatter",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Status Formatter",
+    "func": "// Extract and format status information cleanly without emojis\nvar text = msg.payload;\nvar lines = text.split('\\n');\n\n// Parse the values\nvar avgPM25 = '';\nvar avgPM10 = '';\nvar activeSensors = '';\nvar clusterInfo = '';\n\nlines.forEach(line => {\n    if (line.includes('Average PM2.5:')) {\n        avgPM25 = line.match(/([0-9.]+) μg\\/m³/)[1];\n    }\n    if (line.includes('Average PM10:')) {\n        avgPM10 = line.match(/([0-9.]+) μg\\/m³/)[1];\n    }\n    if (line.includes('Active Sensors:')) {\n        activeSensors = line.match(/([0-9]+\\/[0-9]+)/)[1];\n    }\n    if (line.includes('Cluster Distribution:')) {\n        clusterInfo = line.substring(line.indexOf('Cluster Distribution:') + 21).trim();\n    }\n});\n\n// Determine air quality level with color indicators only\nvar pm25Val = parseFloat(avgPM25);\nvar qualityLevel = 'Good';\nvar qualityIndicator = '🟢';\n\nif (pm25Val > 25) {\n    qualityLevel = 'Poor';\n    qualityIndicator = '🔴';\n} else if (pm25Val > 15) {\n    qualityLevel = 'Moderate';\n    qualityIndicator = '🟡';\n} else if (pm25Val > 10) {\n    qualityLevel = 'Fair';\n    qualityIndicator = '🔵';\n}\n\n// Create clean formatted text with proper line breaks\nvar formattedText = `THESSALONIKI AIR QUALITY\\n\\n`;\nformattedText += `CURRENT READINGS:\\n`;\nformattedText += `PM2.5: ${avgPM25} μg/m³\\n`;\nformattedText += `PM10: ${avgPM10} μg/m³\\n`;\nformattedText += `Sensors: ${activeSensors}\\n\\n`;\nformattedText += `${qualityIndicator} QUALITY: ${qualityLevel.toUpperCase()}\\n\\n`;\nformattedText += `CLUSTERS:\\n${clusterInfo}`;\n\nmsg.payload = formattedText;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 2010,
+    "y": 620,
+    "wires": [
+      [
+        "simple_status_display"
+      ]
+    ]
+  },
+  {
+    "id": "clean_alert_formatter",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Alert Bubble Formatter",
+    "func": "// Format alert message cleanly without extra emojis\nvar text = msg.payload;\n\n// Determine alert type and use only color indicator\nvar alertIndicator = '🔵';\n\nif (text.includes('High Pollution Alert') || text.includes('Poor')) {\n    alertIndicator = '🔴';\n} else if (text.includes('moderate') || text.includes('Moderate')) {\n    alertIndicator = '🟡';\n} else if (text.includes('good') || text.includes('Good')) {\n    alertIndicator = '🟢';\n}\n\n// Create formatted alert text with proper line breaks\nvar timestamp = new Date().toLocaleTimeString();\nvar formattedText = `${alertIndicator} ALERT STATUS\\n\\n${text}\\n\\nUpdated: ${timestamp}`;\n\nmsg.payload = formattedText;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 820,
+    "y": 1140,
+    "wires": [
+      [
+        "simple_alert_display"
+      ]
+    ]
+  },
+  {
+    "id": "trigger_cluster_update",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Trigger Cluster Update",
+    "func": "// Trigger cluster display update when dashboard data changes\nvar clusters = global.get('foundclusters') || [];\n\nif (clusters.length > 0) {\n    msg.payload = clusters;\n    return msg;\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 2020,
+    "y": 920,
+    "wires": [
+      [
+        "enhanced_cluster_formatter"
+      ]
+    ]
+  },
+  {
+    "id": "enhanced_cluster_formatter",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Enhanced Cluster Formatter",
+    "func": "// Get current sensor data to count actual sensors per cluster\nvar currentBoxes = flow.get('current_boxes') || [];\nvar clusters = msg.payload;\n\nif (Array.isArray(clusters)) {\n    var formattedText = \"CLUSTER ANALYSIS RESULTS\\n\\n\";\n    \n    // Count actual sensors per cluster from live data\n    var clusterCounts = {};\n    currentBoxes.forEach(box => {\n        if (box && box.cluster !== undefined) {\n            var clusterId = box.cluster.toString();\n            clusterCounts[clusterId] = (clusterCounts[clusterId] || 0) + 1;\n        }\n    });\n    \n    clusters.forEach((cluster, index) => {\n        var centroid = cluster.centroid && cluster.centroid[0] ? cluster.centroid[0].toFixed(2) : 'N/A';\n        var actualSensorCount = clusterCounts[index.toString()] || 0;\n        \n        // Determine cluster quality with color indicator only\n        var quality = 'Unknown';\n        var indicator = '⚪';\n        \n        if (centroid !== 'N/A') {\n            var centroidValue = parseFloat(centroid);\n            if (centroidValue <= 10) {\n                quality = 'Excellent Air Quality';\n                indicator = '🟢';\n            } else if (centroidValue <= 20) {\n                quality = 'Good Air Quality';\n                indicator = '🟡';\n            } else if (centroidValue <= 35) {\n                quality = 'Moderate Air Quality';\n                indicator = '🟠';\n            } else {\n                quality = 'Poor Air Quality';\n                indicator = '🔴';\n            }\n        }\n        \n        formattedText += `${indicator} CLUSTER ${index}\\n`;\n        formattedText += `Quality: ${quality}\\n`;\n        formattedText += `Average PM2.5: ${centroid} μg/m³\\n`;\n        formattedText += `Active Sensors: ${actualSensorCount}\\n\\n`;\n    });\n    \n    var totalActiveSensors = Object.values(clusterCounts).reduce((sum, count) => sum + count, 0);\n    formattedText += `Total Clusters: ${clusters.length}\\n`;\n    formattedText += `Total Active Sensors: ${totalActiveSensors}/${currentBoxes.length}`;\n    \n    msg.payload = formattedText;\n    return msg;\n}\n\n// If no cluster data\nmsg.payload = \"Analyzing air quality patterns...\\nWaiting for cluster analysis data.\";\nreturn msg;",
+    "outputs": 1,
+    "x": 2240,
+    "y": 980,
+    "wires": [
+      [
+        "simple_cluster_display"
+      ]
+    ]
+  },
+  {
+    "id": "cluster_zone_mapper",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Create Cluster Zones with Fixed Colors",
+    "func": "// Create polygons with corrected colors based on pollution levels\nif (Array.isArray(msg.payload)) {\n    var validBoxes = msg.payload.filter(b => b !== null);\n    \n    // Group sensors by cluster\n    var clusterGroups = {};\n    validBoxes.forEach(box => {\n        if (box && box.cluster !== undefined) {\n            if (!clusterGroups[box.cluster]) {\n                clusterGroups[box.cluster] = [];\n            }\n            clusterGroups[box.cluster].push({\n                lat: box.lat,\n                lon: box.lon,\n                pm25: box.pm25\n            });\n        }\n    });\n    \n    // Clear existing zones\n    var clearMsg = {\n        payload: {\n            command: { clear: \"cluster_zones\" }\n        }\n    };\n    node.send(clearMsg);\n    \n    // Get cluster centroids to determine correct colors\n    var clusters = global.get('foundclusters') || [];\n    \n    // Create zones for each cluster\n    Object.keys(clusterGroups).forEach(clusterId => {\n        var sensors = clusterGroups[clusterId];\n        if (sensors.length >= 2) {\n            // Calculate bounding box with some padding\n            var minLat = Math.min(...sensors.map(s => s.lat)) - 0.005;\n            var maxLat = Math.max(...sensors.map(s => s.lat)) + 0.005;\n            var minLon = Math.min(...sensors.map(s => s.lon)) - 0.005;\n            var maxLon = Math.max(...sensors.map(s => s.lon)) + 0.005;\n            \n            // Determine color based on cluster centroid pollution level\n            var color = 'gray';\n            var label = 'Unknown Zone';\n            var opacity = 0.3;\n            \n            var clusterIndex = parseInt(clusterId);\n            if (clusters[clusterIndex] && clusters[clusterIndex].centroid) {\n                var centroidValue = clusters[clusterIndex].centroid[0];\n                if (centroidValue <= 10) {\n                    color = 'green';\n                    label = 'Low Pollution Zone';\n                } else if (centroidValue <= 25) {\n                    color = 'orange';\n                    label = 'Moderate Pollution Zone';\n                } else {\n                    color = 'red';\n                    label = 'High Pollution Zone';\n                }\n            }\n            \n            // Create polygon\n            var polygonMsg = {\n                payload: {\n                    name: `cluster_zone_${clusterId}`,\n                    layer: \"cluster_zones\",\n                    color: color,\n                    fillColor: color,\n                    fillOpacity: opacity,\n                    weight: 2,\n                    area: [\n                        [minLat, minLon],\n                        [minLat, maxLon],\n                        [maxLat, maxLon],\n                        [maxLat, minLon]\n                    ],\n                    popup: `<b>${label}</b><br>\n                           Cluster ${clusterId}<br>\n                           Sensors: ${sensors.length}<br>\n                           Avg PM2.5: ${(sensors.reduce((acc, s) => acc + s.pm25, 0) / sensors.length).toFixed(1)} μg/m³`\n                }\n            };\n            \n            node.send(polygonMsg);\n        }\n    });\n    \n    // Create corrected legend\n    var legendMsg = {\n        payload: {\n            name: \"cluster_legend\",\n            lat: 40.65,\n            lon: 22.92,\n            icon: \"fa-info-circle\",\n            iconColor: \"blue\",\n            layer: \"cluster_zones\",\n            popup: `<div style='font-weight: bold; margin-bottom: 10px;'>Cluster Legend</div>\n                   <div style='color: green;'>🟢 Low Pollution: PM2.5 ≤ 10 μg/m³</div>\n                   <div style='color: orange;'>🟠 Moderate Pollution: PM2.5 10-25 μg/m³</div>\n                   <div style='color: red;'>🔴 High Pollution: PM2.5 > 25 μg/m³</div>\n                   <br><small>Colors based on pollution levels</small>`\n        }\n    };\n    \n    node.send(legendMsg);\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 2540,
+    "y": 720,
+    "wires": [
+      [
+        "792748233a9f934c"
+      ]
+    ]
+  },
+  {
+    "id": "792748233a9f934c",
+    "type": "ui_chart",
+    "z": "74c712c76dc0a70a",
+    "name": "Cluster Performance Over Time",
+    "group": "9f4e8365551cdeb4",
+    "order": 2,
+    "width": "0",
+    "height": "0",
+    "label": "Cluster Distribution (24h)",
+    "chartType": "line",
+    "legend": "true",
+    "xformat": "HH:mm",
+    "interpolate": "linear",
+    "nodata": "No cluster data",
+    "dot": true,
+    "ymin": "0",
+    "ymax": "",
+    "removeOlder": "1",
+    "removeOlderPoints": "",
+    "removeOlderUnit": "86400",
+    "cutout": 0,
+    "useOneColor": false,
+    "useUTC": false,
+    "colors": [
+      "#2ca02c",
+      "#ff7f0e",
+      "#d62728",
+      "#9467bd",
+      "#8c564b",
+      "#e377c2",
+      "#7f7f7f",
+      "#bcbd22",
+      "#17becf"
+    ],
+    "outputs": 1,
+    "useDifferentColor": false,
+    "className": "",
+    "x": 2870,
+    "y": 720,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "individual_markers_unified_zones",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Individual Markers + Unified Zones",
+    "func": "// Markers get individual colors, zones get average-based colors\nif (Array.isArray(msg.payload)) {\n    var validBoxes = msg.payload.filter(b => b !== null);\n    \n    // Clear old markers\n    var clearMsg = {\n        payload: {\n            command: { clear: \"sensors\" }\n        }\n    };\n    node.send(clearMsg);\n    \n    // Unified color function for consistency\n    function getColorFromPM25(pm25) {\n        if (pm25 <= 8) {\n            return 'green';     // Low pollution\n        } else if (pm25 <= 11) {\n            return 'orange';    // Moderate pollution  \n        } else {\n            return 'red';       // High pollution\n        }\n    }\n    \n    // Add sensor markers - each gets color based on ITS OWN PM2.5 value\n    validBoxes.forEach(function(box) {\n        if (box && box.pm25 !== null && box.pm10 !== null) {\n            var iconColor = getColorFromPM25(box.pm25);  // Individual PM2.5 value\n            var clusterText = box.cluster !== undefined ? `Cluster: ${box.cluster}` : 'Cluster: N/A';\n            \n            var markerMsg = {\n                payload: {\n                    name: box.box_id || box.name,\n                    lat: box.lat,\n                    lon: box.lon,\n                    icon: 'fa-cloud',\n                    iconColor: iconColor,\n                    layer: \"sensors\",\n                    popup: `<b>${box.name}</b><br>\n                            PM2.5: ${box.pm25.toFixed(1)} μg/m³<br>\n                            PM10: ${box.pm10.toFixed(1)} μg/m³<br>\n                            Quality: ${box.quality}<br>\n                            ${clusterText}<br>\n                            Color: ${iconColor} (${box.pm25.toFixed(1)} μg/m³)<br>\n                            <small>Click to see location</small>`\n                }\n            };\n            \n            node.send(markerMsg);\n        }\n    });\n    \n    // Send to zone mapper\n    return [null, {payload: validBoxes}];\n}\n\nreturn [null, null];",
+    "outputs": 2,
+    "x": 2150,
+    "y": 660,
+    "wires": [
+      [
+        "372c2cf67fdc9173"
+      ],
+      [
+        "cluster_average_zone_mapper",
+        "7e019d3f1a0fac9e"
+      ]
+    ]
+  },
+  {
+    "id": "cluster_average_zone_mapper",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Zone Colors Based on Cluster Average",
+    "func": "// Zones get color based on AVERAGE PM2.5 of sensors in that cluster\nif (Array.isArray(msg.payload)) {\n    var validBoxes = msg.payload.filter(b => b !== null);\n    \n    // Group sensors by cluster\n    var clusterGroups = {};\n    validBoxes.forEach(box => {\n        if (box && box.cluster !== undefined) {\n            if (!clusterGroups[box.cluster]) {\n                clusterGroups[box.cluster] = [];\n            }\n            clusterGroups[box.cluster].push({\n                lat: box.lat,\n                lon: box.lon,\n                pm25: box.pm25\n            });\n        }\n    });\n    \n    // Clear existing zones\n    var clearMsg = {\n        payload: {\n            command: { clear: \"cluster_zones\" }\n        }\n    };\n    node.send(clearMsg);\n    \n    // Same color function as markers\n    function getColorFromPM25(pm25) {\n        if (pm25 <= 8) {\n            return { color: 'green', label: 'Low Pollution Zone' };\n        } else if (pm25 <= 11) {\n            return { color: 'orange', label: 'Moderate Pollution Zone' };\n        } else {\n            return { color: 'red', label: 'High Pollution Zone' };\n        }\n    }\n    \n    // Create zones - color based on AVERAGE of cluster\n    Object.keys(clusterGroups).forEach(clusterId => {\n        var sensors = clusterGroups[clusterId];\n        if (sensors.length >= 2) {\n            // Calculate AVERAGE PM2.5 for this cluster\n            var avgPM25 = sensors.reduce((acc, s) => acc + s.pm25, 0) / sensors.length;\n            \n            // Calculate bounding box\n            var minLat = Math.min(...sensors.map(s => s.lat)) - 0.005;\n            var maxLat = Math.max(...sensors.map(s => s.lat)) + 0.005;\n            var minLon = Math.min(...sensors.map(s => s.lon)) - 0.005;\n            var maxLon = Math.max(...sensors.map(s => s.lon)) + 0.005;\n            \n            // Zone color based on CLUSTER AVERAGE\n            var colorInfo = getColorFromPM25(avgPM25);\n            \n            // Count individual sensor colors for info\n            var colorCounts = { green: 0, orange: 0, red: 0 };\n            sensors.forEach(s => {\n                if (s.pm25 <= 8) colorCounts.green++;\n                else if (s.pm25 <= 11) colorCounts.orange++;\n                else colorCounts.red++;\n            });\n            \n            // Create polygon\n            var polygonMsg = {\n                payload: {\n                    name: `cluster_zone_${clusterId}`,\n                    layer: \"cluster_zones\",\n                    color: colorInfo.color,\n                    fillColor: colorInfo.color,\n                    fillOpacity: 0.2,\n                    weight: 2,\n                    area: [\n                        [minLat, minLon],\n                        [minLat, maxLon],\n                        [maxLat, maxLon],\n                        [maxLat, minLon]\n                    ],\n                    popup: `<b>${colorInfo.label}</b><br>\n                           Cluster ${clusterId}<br>\n                           Sensors: ${sensors.length}<br>\n                           Avg PM2.5: ${avgPM25.toFixed(1)} μg/m³<br>\n                           Zone Color: ${colorInfo.color}<br>\n                           Sensor Colors: ${colorCounts.green}🟢 ${colorCounts.orange}🟠 ${colorCounts.red}🔴<br>\n                           <small>Zone based on cluster average</small>`\n                }\n            };\n            \n            node.send(polygonMsg);\n        }\n    });\n    \n    // Legend\n    var legendMsg = {\n        payload: {\n            name: \"cluster_legend\",\n            lat: 40.65,\n            lon: 22.92,\n            icon: \"fa-info-circle\",\n            iconColor: \"blue\",\n            layer: \"cluster_zones\",\n            popup: `<div style='font-weight: bold; margin-bottom: 10px;'>Color System</div>\n                   <div style='color: green;'>🟢 Low: PM2.5 ≤ 8 μg/m³</div>\n                   <div style='color: orange;'>🟠 Moderate: PM2.5 8-11 μg/m³</div>\n                   <div style='color: red;'>🔴 High: PM2.5 > 11 μg/m³</div>\n                   <br><small>Markers: individual values<br>Zones: cluster averages</small>`\n        }\n    };\n    \n    node.send(legendMsg);\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 2530,
+    "y": 680,
+    "wires": [
+      [
+        "372c2cf67fdc9173"
+      ]
+    ]
+  },
+  {
+    "id": "7e019d3f1a0fac9e",
+    "type": "function",
+    "z": "74c712c76dc0a70a",
+    "name": "Track Cluster Performance",
+    "func": "// Track cluster distribution over time\nif (Array.isArray(msg.payload)) {\n    var validBoxes = msg.payload.filter(b => b !== null);\n    var timestamp = Date.now();\n    \n    // Count sensors per cluster\n    var clusterCounts = { '0': 0, '1': 0, '2': 0, 'unknown': 0 };\n    \n    validBoxes.forEach(box => {\n        if (box && box.cluster !== undefined) {\n            var cluster = box.cluster.toString();\n            if (clusterCounts.hasOwnProperty(cluster)) {\n                clusterCounts[cluster]++;\n            } else {\n                clusterCounts['unknown']++;\n            }\n        } else {\n            clusterCounts['unknown']++;\n        }\n    });\n    \n    // Get historical cluster performance\n    var clusterHistory = flow.get('cluster_performance_history') || [];\n    \n    // Add current snapshot\n    clusterHistory.push({\n        timestamp: timestamp,\n        cluster0: clusterCounts['0'],\n        cluster1: clusterCounts['1'],\n        cluster2: clusterCounts['2'],\n        unknown: clusterCounts['unknown']\n    });\n    \n    // Keep only last 24 hours\n    var dayAgo = Date.now() - (24 * 60 * 60 * 1000);\n    clusterHistory = clusterHistory.filter(h => h.timestamp > dayAgo);\n    flow.set('cluster_performance_history', clusterHistory);\n    \n    // Prepare chart data\n    var cluster0Data = [];\n    var cluster1Data = [];\n    var cluster2Data = [];\n    \n    clusterHistory.forEach(point => {\n        cluster0Data.push({ x: point.timestamp, y: point.cluster0 });\n        cluster1Data.push({ x: point.timestamp, y: point.cluster1 });\n        cluster2Data.push({ x: point.timestamp, y: point.cluster2 });\n    });\n    \n    msg.payload = [{\n        series: ['Low Pollution (C0)', 'Moderate Pollution (C1)', 'High Pollution (C2)'],\n        data: [cluster0Data, cluster1Data, cluster2Data],\n        labels: ['Cluster 0', 'Cluster 1', 'Cluster 2']\n    }];\n    \n    return msg;\n}\n\nreturn null;",
+    "outputs": 1,
+    "x": 2500,
+    "y": 780,
+    "wires": [
+      [
+        "792748233a9f934c"
+      ]
+    ]
+  },
+  {
+    "id": "4588ea836735125a",
+    "type": "ui_group",
+    "name": "Historical Charts",
+    "tab": "dashboard_tab",
+    "order": 2,
+    "disp": true,
+    "width": 12,
+    "collapse": false
+  },
+  {
+    "id": "f1eb5d5f179e6828",
+    "type": "ui_group",
+    "name": "Map & Sensors",
+    "tab": "dashboard_tab",
+    "order": 1,
+    "disp": true,
+    "width": 12,
+    "collapse": false
+  },
+  {
+    "id": "3525da1ce0b91433",
+    "type": "ui_group",
+    "name": "Status",
+    "tab": "dashboard_tab",
+    "order": 3,
+    "disp": true,
+    "width": 12,
+    "collapse": false
+  },
+  {
+    "id": "9f4e8365551cdeb4",
+    "type": "ui_group",
+    "name": "Cluster Analysis",
+    "tab": "dashboard_tab",
+    "order": 4,
+    "disp": true,
+    "width": 12,
+    "collapse": false
+  },
+  {
+    "id": "dashboard_tab",
+    "type": "ui_tab",
+    "name": "Pollution Dashboard",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "9c7f7e8f99f3d144",
+    "type": "global-config",
+    "env": [],
+    "modules": {
+      "node-red-dashboard": "3.6.6",
+      "node-red-contrib-web-worldmap": "2.3.13",
+      "node-red-node-email": "0.1.29",
+      "node-red-node-ui-table": "0.4.5"
+    }
+  }
+]
