@@ -25,8 +25,8 @@ An academic prototype for monitoring air-quality indicators around **Thessalonik
 | ![Map of Thessaloniki with air quality markers](assets/sensor-map.webp) | ![Seven-day PM2.5 and PM10 trends](assets/pm25-pm10-history.webp) |
 | Wind history | Cluster analytics |
 | ![Seven-day wind-speed history](assets/wind-history.webp) | ![Cluster distribution and migration results](assets/cluster-analysis.webp) |
-| Sensor table | Alert demonstration |
-| ![Station reading table with cluster assignments](assets/sensor-table.webp) | ![Test alert button and warning status](assets/test-alert.webp) |
+| Sensor table | Live status panel |
+| ![Station reading table with cluster assignments](assets/sensor-table.webp) | ![Historical dashboard status and alerts](assets/status-display.webp) |
 
 The figures show the historical dashboard state at submission time, including simulated/test inputs. They do **not** represent current air quality.
 
